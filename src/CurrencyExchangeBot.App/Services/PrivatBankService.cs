@@ -36,9 +36,7 @@ namespace CurrencyExchangeBot.App.Services
             if (cache.TryGetValue(cacheKey, out ExchangeRate? cached))
             {
                 logger.LogInformation("Getting rate {Currency} from cache", currency);
-                return ValueTask.FromResult(cached is not null 
-                    ? Result<ExchangeRate>.Success(cached)
-                    : Result<ExchangeRate>.NotFound($"Дані для {currency} на {date:dd.MM.yyyy} не знайдено."));
+                return ValueTask.FromResult(Result<ExchangeRate>.Success(cached!));
             }
 
             var lazy = _inFlight.GetOrAdd(cacheKey,
@@ -71,7 +69,11 @@ namespace CurrencyExchangeBot.App.Services
             var rate = response?.ExchangeRate
                 .FirstOrDefault(r => r.Currency?.Equals(currency, StringComparison.OrdinalIgnoreCase) == true);
 
-            cache.Set(cacheKey, rate, _cacheTtl);
+            if (rate is not null)
+            {
+                cache.Set(cacheKey, rate, _cacheTtl);
+            }
+            
             return rate is not null
                 ? Result<ExchangeRate>.Success(rate)
                 : Result<ExchangeRate>.NotFound($"Дані для {currency} на {date:dd.MM.yyyy} не знайдено.");
